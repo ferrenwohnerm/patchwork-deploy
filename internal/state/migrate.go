@@ -2,62 +2,83 @@ package state
 
 import (
 	"fmt"
-	"time"
+	"os"
+	"path/filepath"
 )
 
-// ImportOptions configures a bulk import of existing patch records.
-type ImportOptions struct {
-	PatchIDs    []string
-	Environment string
-	AppliedAt   time.Time
-}
-
-// Import bulk-adds patch records without duplicating existing ones.
-// Returns the count of newly added records.
-func Import(s *State, opts ImportOptions) (int, error) {
-	if opts.Environment == "" {
-		return 0, fmt.Errorf("environment must not be empty")
+// Import reads patch records from a legacy flat file (one patch ID per line)
+// and merges them into the current state for the given environment.
+func Import(s *State, env, legacyPath string) (int, error) {
+	data, err := os.ReadFile(legacyPath)
+	if err != nil {
+		return 0, fmt.Errorf("import: reading legacy file: %w", err)
 	}
 
-	at := opts.AppliedAt
-	if at.IsZero() {
-		at = time.Now().UTC()
-	}
-
-	added := 0
-	for _, id := range opts.PatchIDs {
+	lines := splitLines(string(data))
+	imported := 0
+	for _, id := range lines {
 		if id == "" {
 			continue
 		}
-		if s.Has(id, opts.Environment) {
-			continue
+		if !s.Has(env, id) {
+			s.Records = append(s.Records, Record{
+				Environment: env,
+				PatchID:     id,
+				AppliedAt:   "",
+			})
+			imported++
 		}
-		s.Records = append(s.Records, Record{
-			PatchID:     id,
-			Environment: opts.Environment,
-			AppliedAt:   at,
-		})
-		added++
 	}
-	return added, nil
+	return imported, nil
 }
 
-// Prune removes records for patches no longer present in knownIDs.
-// Returns the count of removed records.
-func Prune(s *State, environment string, knownIDs map[string]struct{}) int {
-	var kept []Record
-	removed := 0
-	for _, r := range s.Records {
-		if r.Environment != environment {
-			kept = append(kept, r)
-			continue
+// Prune removes all state records for patch IDs that no longer exist
+// in the given patch directory for the specified environment.
+func Prune(s *State, env, patchDir string) (int, error) {
+	entries, err := os.ReadDir(patchDir)
+	if err != nil {
+		return 0, fmt.Errorf("prune: reading patch dir: %w", err)
+	}
+
+	existing := make(map[string]bool)
+	for _, e := range entries {
+		if !e.IsDir() {
+			existing[stripExt(e.Name())] = true
 		}
-		if _, ok := knownIDs[r.PatchID]; ok {
+	}
+
+	var kept []Record
+	pruned := 0
+	for _, r := range s.Records {
+		if r.Environment != env || existing[r.PatchID] {
 			kept = append(kept, r)
 		} else {
-			removed++
+			pruned++
 		}
 	}
 	s.Records = kept
-	return removed
+	return pruned, nil
+}
+
+func stripExt(name string) string {
+	ext := filepath.Ext(name)
+	if ext == "" {
+		return name
+	}
+	return name[:len(name)-len(ext)]
+}
+
+func splitLines(s string) []string {
+	var lines []string
+	start := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\n' {
+			lines = append(lines, s[start:i])
+			start = i + 1
+		}
+	}
+	if start < len(s) {
+		lines = append(lines, s[start:])
+	}
+	return lines
 }
