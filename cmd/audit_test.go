@@ -70,3 +70,25 @@ func TestAuditLog_FilterByEnv(t *testing.T) {
 		}
 	}
 }
+
+func TestAuditLog_FailedEntryHasReason(t *testing.T) {
+	dir := tempAuditDir(t)
+	l := audit.New(dir)
+
+	_ = l.Record("prod", "003_index.sql", "apply", false, "connection refused")
+
+	entries, err := l.Read()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(entries))
+	}
+	e := entries[0]
+	if e.Success {
+		t.Error("expected entry to be marked as failed")
+	}
+	if e.Reason != "connection refused" {
+		t.Errorf("expected reason %q, got %q", "connection refused", e.Reason)
+	}
+}
