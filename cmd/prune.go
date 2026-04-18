@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	pruneEnv    string
+	pruneEnv       string
 	pruneOlderThan string
-	pruneDryRun bool
+	pruneDryRun    bool
 )
 
 func init() {
@@ -55,10 +55,7 @@ func runPrune(cmd *cobra.Command, _ []string) error {
 	result := state.PruneByAge(st, opts)
 
 	if pruneDryRun {
-		fmt.Fprintf(os.Stdout, "[dry-run] would remove %d record(s)\n", len(result.Removed))
-		for _, r := range result.Removed {
-			fmt.Fprintf(os.Stdout, "  - [%s] %s (applied %s)\n", r.Environment, r.Patch, r.AppliedAt.Format(time.RFC3339))
-		}
+		printPrunePreview(result)
 		return nil
 	}
 
@@ -68,4 +65,12 @@ func runPrune(cmd *cobra.Command, _ []string) error {
 
 	fmt.Fprintf(os.Stdout, "Pruned %d record(s), %d retained.\n", len(result.Removed), len(result.Retained))
 	return nil
+}
+
+// printPrunePreview prints the records that would be removed in a dry-run.
+func printPrunePreview(result state.PruneResult) {
+	fmt.Fprintf(os.Stdout, "[dry-run] would remove %d record(s)\n", len(result.Removed))
+	for _, r := range result.Removed {
+		fmt.Fprintf(os.Stdout, "  - [%s] %s (applied %s)\n", r.Environment, r.Patch, r.AppliedAt.Format(time.RFC3339))
+	}
 }
