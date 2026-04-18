@@ -22,3 +22,13 @@ environments:
       LOG_LEVEL: warn
       REPLICAS: "5"
       FEATURE_FLAGS: ""
+
+  # ── Canary ───────────────────────────────────────────────────────────────
+  # Optional: route a small percentage of traffic to a new version before
+  # promoting fully to production.
+  # - name: canary
+  #   base_url: https://canary.my-service.example.com
+  #   variables:
+  #     LOG_LEVEL: info
+  #     REPLICAS: "1"
+  #     FEATURE_FLAGS: "new-ui,beta-api"
