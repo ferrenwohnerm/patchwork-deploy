@@ -30,3 +30,8 @@ func FormatPromoteResult(r PromoteResult) string {
 	fmt.Fprintf(&sb, "Summary: %d applied, %d skipped\n", len(r.Applied), len(r.Skipped))
 	return sb.String()
 }
+
+// HasChanges reports whether the promotion applied at least one patch.
+func (r PromoteResult) HasChanges() bool {
+	return len(r.Applied) > 0
+}
