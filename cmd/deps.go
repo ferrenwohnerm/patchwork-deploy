@@ -44,6 +44,9 @@ func init() {
 }
 
 func runDepsAdd(environment, patch, dependsOn string) error {
+	if patch == dependsOn {
+		return fmt.Errorf("patch %q cannot depend on itself", patch)
+	}
 	st, err := state.Load(workDir())
 	if err != nil {
 		return err
