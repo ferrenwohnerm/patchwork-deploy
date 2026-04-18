@@ -16,7 +16,7 @@ func Pause(st *state.State, env string) error {
 		return fmt.Errorf("environment %q not found", env)
 	}
 	if IsPaused(st, env) {
-		return nil
+		return fmt.Errorf("environment %q is already paused", env)
 	}
 	st.Add(state.Record{
 		Environment: env,
@@ -31,6 +31,9 @@ func Unpause(st *state.State, env string) error {
 	recs := st.ForEnvironment(env)
 	if len(recs) == 0 {
 		return fmt.Errorf("environment %q not found", env)
+	}
+	if !IsPaused(st, env) {
+		return fmt.Errorf("environment %q is not paused", env)
 	}
 	st.RemoveWhere(func(r state.Record) bool {
 		return r.Environment == env && r.Patch == pauseSentinel
