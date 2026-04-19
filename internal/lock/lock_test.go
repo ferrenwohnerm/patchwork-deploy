@@ -2,6 +2,7 @@ package lock_test
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -78,5 +79,11 @@ func TestLockFile_ContainsPID(t *testing.T) {
 	}
 	if len(data) == 0 {
 		t.Fatal("expected non-empty lock file content")
+	}
+
+	pid := os.Getpid()
+	expected := fmt.Sprintf("%d", pid)
+	if string(data) != expected {
+		t.Fatalf("expected lock file to contain PID %s, got %q", expected, string(data))
 	}
 }
