@@ -49,6 +49,9 @@ func init() {
 }
 
 func runRolloutSet(stateFile, environment, patch string, strategy env.RolloutStrategy) error {
+	if !env.IsValidStrategy(strategy) {
+		return fmt.Errorf("invalid rollout strategy %q: must be one of canary, blue-green, immediate", strategy)
+	}
 	st, err := state.Load(stateFile)
 	if err != nil {
 		return err
