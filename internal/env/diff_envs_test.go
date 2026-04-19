@@ -85,3 +85,24 @@ func TestDiffEnvironments_BothHaveSamePatches(t *testing.T) {
 		t.Errorf("expected 1 shared patch, got %d", len(result.Result.InBoth))
 	}
 }
+
+func TestDiffEnvironments_ShowsMissingInSource(t *testing.T) {
+	now := time.Now()
+	st := &state.State{}
+	st.Add(state.Record{Environment: "staging", Patch: "001-init.sql", AppliedAt: now})
+	st.Add(state.Record{Environment: "production", Patch: "001-init.sql", AppliedAt: now})
+	st.Add(state.Record{Environment: "production", Patch: "002-users.sql", AppliedAt: now})
+
+	result, err := env.DiffEnvironments(st, "staging", "production")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.Result.OnlyInB) != 1 {
+		t.Errorf("expected 1 patch only in production, got %d", len(result.Result.OnlyInB))
+	}
+
+	if result.Result.OnlyInB[0].Patch != "002-users.sql" {
+		t.Errorf("expected 002-users.sql only in production, got %s", result.Result.OnlyInB[0].Patch)
+	}
+}
