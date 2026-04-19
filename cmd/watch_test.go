@@ -18,7 +18,10 @@ func tempWatchDir(t *testing.T) string {
 
 func writeWatchState(t *testing.T, dir string, records []state.Record) {
 	t.Helper()
-	data, _ := json.Marshal(records)
+	data, err := json.Marshal(records)
+	if err != nil {
+		t.Fatalf("failed to marshal state records: %v", err)
+	}
 	if err := os.WriteFile(filepath.Join(dir, "state.json"), data, 0644); err != nil {
 		t.Fatal(err)
 	}
