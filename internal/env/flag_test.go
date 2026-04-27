@@ -73,3 +73,11 @@ func TestListFlags_DoesNotLeakOtherEnvs(t *testing.T) {
 		t.Fatalf("expected no flags for staging, got %v", flags)
 	}
 }
+
+func TestListFlags_EmptyForMissingEnv(t *testing.T) {
+	st := flagBaseState()
+	flags := ListFlags(st, "nonexistent")
+	if len(flags) != 0 {
+		t.Fatalf("expected no flags for missing env, got %v", flags)
+	}
+}
